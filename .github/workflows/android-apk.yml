@@ -75,6 +75,14 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean
 
+      # One ABI instead of four: a universal APK carries native libs for
+      # arm64-v8a, armeabi-v7a, x86 and x86_64 (~4x the size). Real phones are
+      # arm64; x86 builds are only for emulators.
+      - name: Trim to arm64
+        run: |
+          sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a/' android/gradle.properties
+          grep -n 'reactNativeArchitectures' android/gradle.properties
+
       # Release, not debug: a debug APK ships no JS bundle and dies with
       # "Unable to load script" because it expects a Metro server. Expo's
       # template signs release with the debug keystore, so this is installable
