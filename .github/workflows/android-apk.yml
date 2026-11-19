@@ -84,15 +84,42 @@ jobs:
           grep -n 'reactNativeArchitectures' android/gradle.properties
 
       # Release, not debug: a debug APK ships no JS bundle and dies with
-      # "Unable to load script" because it expects a Metro server. Expo's
-      # template signs release with the debug keystore, so this is installable
-      # as-is but still not a Play Store upload.
-      - name: Build release APK
+      # "Unable to load script" because it expects a Metro server.
+      #
+      # Signing: add these repo secrets and the APK/AAB become Play-ready.
+      # Without them the build falls back to Expo's debug keystore.
+      #   ANDROID_KEYSTORE_BASE64  base64 of the .jks file
+      #   ANDROID_KEYSTORE_PASSWORD
+      #   ANDROID_KEY_ALIAS
+      #   ANDROID_KEY_PASSWORD
+      - name: Prepare release signing
+        id: signing
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Release keystore loaded — artifacts will be properly signed."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_KEYSTORE_BASE64 not set — signing with the debug keystore."
+          fi
+
+      - name: Build release APK and AAB
         working-directory: android
+        env:
+          KS_PATH: ${{ runner.temp }}/release.keystore
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          SIGNED: ${{ steps.signing.outputs.configured }}
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
+          ARGS=""
+          if [ "$SIGNED" = "true" ]; then
+            ARGS="-Pandroid.injected.signing.store.file=$KS_PATH -Pandroid.injected.signing.store.password=$KS_PASS -Pandroid.injected.signing.key.alias=$KEY_ALIAS -Pandroid.injected.signing.key.password=$KEY_PASS"
+          fi
+          ./gradlew assembleRelease bundleRelease $ARGS --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
 
       # Sandbox-side log access is blocked for this repo's Actions, so failures
       # are echoed to issue #1 where they can be read back.
@@ -114,7 +141,7 @@ jobs:
           } > /tmp/body.md
           gh issue comment 1 --repo "${{ github.repository }}" --body-file /tmp/body.md || true
 
-      - name: Collect APK
+      - name: Collect APK and AAB
         id: apk
         run: |
           set -euo pipefail
@@ -122,7 +149,11 @@ jobs:
           test -n "$SRC"
           OUT="GalliRent-${GITHUB_RUN_NUMBER}.apk"
           cp "$SRC" "$OUT"
-          ls -lh "$OUT"
+          AAB_SRC=$(find android/app/build/outputs/bundle/release -name '*.aab' | head -n 1 || true)
+          if [ -n "$AAB_SRC" ]; then
+            cp "$AAB_SRC" "GalliRent-${GITHUB_RUN_NUMBER}.aab"
+          fi
+          ls -lh GalliRent-${GITHUB_RUN_NUMBER}.*
           echo "path=$OUT" >> "$GITHUB_OUTPUT"
           echo "size=$(du -h "$OUT" | cut -f1)" >> "$GITHUB_OUTPUT"
 
@@ -130,7 +161,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gallirent-apk
-          path: ${{ steps.apk.outputs.path }}
+          path: |
+            ${{ steps.apk.outputs.path }}
+            GalliRent-*.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -145,6 +178,8 @@ jobs:
 
             Install on Android: allow "install unknown apps" for your browser/file manager, then open the APK.
             Signed with the CI debug keystore — fine for testing, not for a Play Store upload.
-          files: ${{ steps.apk.outputs.path }}
+          files: |
+            ${{ steps.apk.outputs.path }}
+            GalliRent-*.aab
           draft: false
           prerelease: true
