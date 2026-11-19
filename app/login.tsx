@@ -52,7 +52,7 @@ export default function LoginScreen() {
         if (error) throw error;
       }
       setSent(true);
-      Alert.alert('OTP sent', `Enter the 6-digit code sent to your ${mode === 'PHONE' ? 'phone' : 'email'}.`);
+      Alert.alert('OTP sent', `Enter the code sent to your ${mode === 'PHONE' ? 'phone' : 'email'} (6–8 digits).`);
     } catch (error) {
       Alert.alert('Could not send OTP', error instanceof Error ? error.message : 'Please try again.');
     } finally {
@@ -63,8 +63,8 @@ export default function LoginScreen() {
   const verifyOtp = async () => {
     if (busy) return;
     const token = otp.replace(/\D/g, '');
-    if (token.length !== 6) {
-      Alert.alert('Invalid OTP', 'Enter the 6-digit verification code.');
+    if (token.length < 6 || token.length > 8) {
+      Alert.alert('Invalid OTP', 'Enter the 6–8 digit verification code.');
       return;
     }
     setBusy(true);
@@ -130,10 +130,10 @@ export default function LoginScreen() {
 
             {sent ? (
               <FormField
-                label="6-digit OTP"
+                label="6–8 digit OTP"
                 value={otp}
-                onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="123456"
+                onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 8))}
+                placeholder="12345678"
                 keyboardType="number-pad"
                 autoCapitalize="none"
               />
