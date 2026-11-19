@@ -26,6 +26,8 @@ export default function ProfileScreen() {
   const { profile, premiumActive, premiumExpiresAt, isAdmin, signOut, refresh } = useAppState();
   const [name, setName] = useState(profile?.full_name ?? '');
   const [savingName, setSavingName] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,6 +55,28 @@ export default function ProfileScreen() {
       Alert.alert('Could not save', error instanceof Error ? error.message : 'Please try again.');
     } finally {
       setSavingName(false);
+    }
+  };
+
+  const updatePassword = async () => {
+    if (savingPassword) return;
+    if (newPassword.length < 6) {
+      Alert.alert('Password too short', 'Use at least 6 characters.');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw new Error(error.message);
+      setNewPassword('');
+      Alert.alert('Password updated', 'Use this password the next time you sign in.');
+    } catch (error) {
+      Alert.alert(
+        'Could not update password',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -172,6 +196,25 @@ export default function ProfileScreen() {
               Login number: {profile?.phone ? `+91 ${profile.phone}` : profile?.email ?? '—'} (contact support to change)
             </Text>
           </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Password</Text>
+          <FormField
+            label="New password"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            placeholder="At least 6 characters"
+            secureTextEntry
+            autoCapitalize="none"
+          />
+          <AppButton
+            title="Update password"
+            variant="secondary"
+            compact
+            loading={savingPassword}
+            onPress={() => void updatePassword()}
+          />
         </View>
 
         <View style={styles.card}>
