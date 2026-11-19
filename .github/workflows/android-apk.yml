@@ -24,6 +24,7 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   build:
@@ -76,7 +77,30 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
+
+      # Sandbox-side log access is blocked for this repo's Actions, so failures
+      # are echoed to issue #1 where they can be read back.
+      - name: Report build failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LOG="$GITHUB_WORKSPACE/gradle-build.log"
+          {
+            echo "Failed run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            if [ -f "$LOG" ]; then
+              echo '```'
+              tail -n 250 "$LOG" | tail -c 55000
+              echo '```'
+            else
+              echo "No gradle log produced (failed before the build step)."
+            fi
+          } > /tmp/body.md
+          gh issue comment 1 --repo "${{ github.repository }}" --body-file /tmp/body.md || true
 
       - name: Collect APK
         id: apk
