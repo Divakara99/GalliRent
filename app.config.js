@@ -112,7 +112,7 @@ const baseConfig = {
         "android": {
           "compileSdkVersion": 36,
           "targetSdkVersion": 36,
-          "minSdkVersion": 23,
+          "minSdkVersion": 24,
           "buildToolsVersion": "36.0.0",
           "enableProguardInReleaseBuilds": true
         }
