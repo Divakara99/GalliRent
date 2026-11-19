@@ -75,12 +75,16 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean
 
-      - name: Build debug APK
+      # Release, not debug: a debug APK ships no JS bundle and dies with
+      # "Unable to load script" because it expects a Metro server. Expo's
+      # template signs release with the debug keystore, so this is installable
+      # as-is but still not a Play Store upload.
+      - name: Build release APK
         working-directory: android
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
 
       # Sandbox-side log access is blocked for this repo's Actions, so failures
       # are echoed to issue #1 where they can be read back.
@@ -106,9 +110,9 @@ jobs:
         id: apk
         run: |
           set -euo pipefail
-          SRC=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -n 1)
+          SRC=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n 1)
           test -n "$SRC"
-          OUT="GalliRent-${GITHUB_RUN_NUMBER}-debug.apk"
+          OUT="GalliRent-${GITHUB_RUN_NUMBER}.apk"
           cp "$SRC" "$OUT"
           ls -lh "$OUT"
           echo "path=$OUT" >> "$GITHUB_OUTPUT"
@@ -117,7 +121,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gallirent-debug-apk
+          name: gallirent-apk
           path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
           retention-days: 30
@@ -129,10 +133,10 @@ jobs:
           tag_name: apk-${{ github.run_number }}
           name: GalliRent test APK #${{ github.run_number }}
           body: |
-            Debug-signed APK built from `${{ github.sha }}`.
+            Release-mode APK (JS bundle embedded, so it runs without Metro) built from `${{ github.sha }}`.
 
             Install on Android: allow "install unknown apps" for your browser/file manager, then open the APK.
-            Debug builds are signed with the CI debug keystore, so they are for testing only, not Play uploads.
+            Signed with the CI debug keystore — fine for testing, not for a Play Store upload.
           files: ${{ steps.apk.outputs.path }}
           draft: false
           prerelease: true
