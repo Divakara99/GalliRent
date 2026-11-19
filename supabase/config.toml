@@ -1,0 +1,7 @@
+project_id = "gallirent"
+
+[functions.admob-ssv]
+verify_jwt = false
+
+[functions.verify-play-purchase]
+verify_jwt = true

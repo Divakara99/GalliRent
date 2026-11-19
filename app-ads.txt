@@ -1,0 +1,4 @@
+# GalliRent app-ads.txt
+# Replace pub-0000000000000000 with the numeric publisher ID from AdMob -> Settings -> Account information.
+# Deploy this exact file at https://YOUR_PUBLISHER_DOMAIN/app-ads.txt and verify it in AdMob.
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

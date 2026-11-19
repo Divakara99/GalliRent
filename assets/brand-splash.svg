@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1284" height="2778" viewBox="0 0 1284 2778">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E293B"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1284" height="2778" fill="url(#bg)"/>
+  <g transform="translate(282 1090) scale(.70)">
+    <path d="M216 516 L512 270 L808 516" fill="none" stroke="#34D399" stroke-width="62" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M292 490 V760 H732 V490" fill="none" stroke="#FFFFFF" stroke-width="62" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M452 760 V606 A60 60 0 0 1 572 606 V760" fill="#FBBF24"/>
+    <circle cx="512" cy="676" r="16" fill="#047857"/>
+  </g>
+  <text x="642" y="1880" fill="#FFFFFF" font-size="112" font-family="DejaVu Sans, Arial, sans-serif" font-weight="700" text-anchor="middle">GalliRent</text>
+  <text x="642" y="1970" fill="#94A3B8" font-size="42" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle">Houses &amp; Shops Near Me</text>
+</svg>

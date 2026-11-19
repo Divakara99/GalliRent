@@ -1,0 +1,25 @@
+node_modules/
+.expo/
+.expo-shared/
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.*
+yarn-error.*
+android/
+ios/
+dist/
+web-build/
+coverage/
+*.aab
+*.apk
+*.jks
+*.keystore
+google-play-service-account.json
+service-account*.json
+.DS_Store
+
+# Supabase CLI link state (contains project ref, never needed in git)
+supabase/.temp/
+supabase/.branches/

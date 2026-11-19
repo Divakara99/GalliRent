@@ -1,0 +1,107 @@
+name: Android APK
+
+# Builds an installable debug APK on GitHub's runners (this sandbox has no
+# Android SDK, so the build has to happen here). The APK is uploaded as a
+# workflow artifact and, on manual runs, attached to a GitHub Release so it can
+# be downloaded straight to a phone.
+#
+#   gh workflow run android-apk.yml --ref <branch>
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Attach the APK to a GitHub Release"
+        type: boolean
+        default: true
+  push:
+    branches:
+      - "arena/2b6608d3-gallirent"
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      # Public client values: safe to embed in the APK. Override with repo
+      # secrets if the project changes.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL || 'https://lgslrcyaztmdosqznkjf.supabase.co' }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_tmQvJQyWYriSaEi-UbRk_g_-rlvkwSq' }}
+      # Google's sample AdMob IDs: fine for a test APK, never for production.
+      EXPO_PUBLIC_ADMOB_ANDROID_APP_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID || 'ca-app-pub-3940256099942544~3347511713' }}
+      EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID || 'ca-app-pub-3940256099942544/6300978111' }}
+      EXPO_PUBLIC_ADMOB_REWARDED_UNIT_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_REWARDED_UNIT_ID || 'ca-app-pub-3940256099942544/5224354917' }}
+      # Maps key is required by the config plugin; a placeholder means map tiles
+      # will be blank in this test build.
+      EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'REPLACE_GOOGLE_MAPS_API_KEY' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Collect APK
+        id: apk
+        run: |
+          set -euo pipefail
+          SRC=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -n 1)
+          test -n "$SRC"
+          OUT="GalliRent-${GITHUB_RUN_NUMBER}-debug.apk"
+          cp "$SRC" "$OUT"
+          ls -lh "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+          echo "size=$(du -h "$OUT" | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gallirent-debug-apk
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: GalliRent test APK #${{ github.run_number }}
+          body: |
+            Debug-signed APK built from `${{ github.sha }}`.
+
+            Install on Android: allow "install unknown apps" for your browser/file manager, then open the APK.
+            Debug builds are signed with the CI debug keystore, so they are for testing only, not Play uploads.
+          files: ${{ steps.apk.outputs.path }}
+          draft: false
+          prerelease: true

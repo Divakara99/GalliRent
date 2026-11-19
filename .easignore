@@ -1,0 +1,7 @@
+# Keep documentation, backend and tooling out of the uploaded native build.
+docs/
+supabase/
+scripts/
+terms.html
+app-ads.txt
+*.md

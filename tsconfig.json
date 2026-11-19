@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["react", "expo"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "app.config.js",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": ["node_modules", "android", "ios", "supabase/functions"]
+}
