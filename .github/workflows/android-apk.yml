@@ -42,9 +42,9 @@ jobs:
       EXPO_PUBLIC_ADMOB_ANDROID_APP_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID || 'ca-app-pub-3940256099942544~3347511713' }}
       EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID || 'ca-app-pub-3940256099942544/6300978111' }}
       EXPO_PUBLIC_ADMOB_REWARDED_UNIT_ID: ${{ secrets.EXPO_PUBLIC_ADMOB_REWARDED_UNIT_ID || 'ca-app-pub-3940256099942544/5224354917' }}
-      # Maps key is required by the config plugin; a placeholder means map tiles
-      # will be blank in this test build.
-      EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'REPLACE_GOOGLE_MAPS_API_KEY' }}
+      # Android Maps SDK key. Public by design (it ships in the APK), protected
+      # by the package + SHA-1 restrictions on the Google Cloud key.
+      EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyC3cn95kgQiT7AxHiX-qAaNItBZn5uaK2A' }}
 
     steps:
       - uses: actions/checkout@v4
